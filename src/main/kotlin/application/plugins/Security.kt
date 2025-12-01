@@ -9,7 +9,7 @@ fun Application.configureSecurity(jwtTokenGenerator: JwtTokenGenerator) {
     install(Authentication) {
         jwt("auth-jwt") {
             realm = "com.myPhysioTime"
-            verifier(jwtTokenGenerator.verifier) // Usa tu JwtTokenGenerator
+            verifier(jwtTokenGenerator.verifier)
             validate { credential ->
                 if (credential.payload.getClaim("email").asString().isNotEmpty()) {
                     JWTPrincipal(credential.payload)

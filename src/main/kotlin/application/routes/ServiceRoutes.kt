@@ -17,13 +17,12 @@ fun Route.serviceRoutes(
     deleteServiceUseCase: DeleteServiceUseCase
 ) {
     route("/services") {
-        // Público - listar servicios activos
         get {
             val activeOnly = call.request.queryParameters["active"]?.toBoolean() ?: false
 
             getAllServicesUseCase.execute(activeOnly)
                 .onSuccess { services ->
-                    call.respond(services.map { it.toDTO() }) // ✅ ahora sí compila
+                    call.respond(services.map { it.toDTO() })
                 }
                 .onFailure { e ->
                     call.respond(
@@ -34,7 +33,6 @@ fun Route.serviceRoutes(
         }
 
         authenticate("auth-jwt") {
-            // Admin - crear servicio
             post {
                 val request = call.receive<CreateServiceRequest>()
                 val command = request.toCommand()
@@ -51,7 +49,6 @@ fun Route.serviceRoutes(
                     }
             }
 
-            // Admin - actualizar servicio
             put("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
                     ?: return@put call.respond(HttpStatusCode.BadRequest)
@@ -71,7 +68,6 @@ fun Route.serviceRoutes(
                     }
             }
 
-            // Admin - eliminar servicio
             delete("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
                     ?: return@delete call.respond(HttpStatusCode.BadRequest)
@@ -91,7 +87,6 @@ fun Route.serviceRoutes(
     }
 }
 
-// ✅ Extensiones movidas fuera de serviceRoutes
 fun Service.toDTO() = ServiceDTO(
     id = id,
     name = name,

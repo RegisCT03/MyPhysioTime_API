@@ -36,10 +36,11 @@ class UserRepositoryImpl : UserRepository {
             .selectAll()
             .mapNotNull { it.toUser() }
     }
+
     override suspend fun findAllClients(): List<ClientStats> = DatabaseFactory.dbQuery {
         val query = """
-        SELECT * FROM v_client_stats ORDER BY name
-    """.trimIndent()
+            SELECT * FROM v_client_stats ORDER BY name
+        """.trimIndent()
 
         TransactionManager.current().exec(query) { rs ->
             val result = mutableListOf<ClientStats>()
@@ -63,13 +64,13 @@ class UserRepositoryImpl : UserRepository {
     override suspend fun create(command: CreateUserCommand): User = DatabaseFactory.dbQuery {
         val now = LocalDateTime.now()
 
-        println("Insertando usuario con: $command")
+        require(command.roleId in 1..2) { "Invalid roleId: must be 1 (ADMIN) or 2 (CLIENT)" }
+        require(command.firstName.isNotBlank()) { "firstName cannot be blank" }
+        require(command.lastName.isNotBlank()) { "lastName cannot be blank" }
+        require(command.email.isNotBlank()) { "email cannot be blank" }
+        require(command.password.isNotBlank()) { "password cannot be blank" }
 
-        requireNotNull(command.roleId) { "roleId no puede ser null" }
-        requireNotNull(command.firstName) { "firstName no puede ser null" }
-        requireNotNull(command.lastName) { "lastName no puede ser null" }
-        requireNotNull(command.email) { "email no puede ser null" }
-        requireNotNull(command.password) { "password no puede ser null" }
+        val phoneValue = command.phone?.take(10) ?: ""
 
         val insertedId = try {
             UsersTable.insert {
@@ -77,39 +78,82 @@ class UserRepositoryImpl : UserRepository {
                 it[firstName] = command.firstName
                 it[lastName] = command.lastName
                 it[email] = command.email
-                it[phone] = command.phone ?: ""
+                it[phone] = phoneValue
                 it[password] = command.password
-                it[stripeId] = null // explícito
-                it[lastLogin] = null // explícito
+                it[stripeId] = null
+                it[lastLogin] = null
                 it[createdAt] = now
                 it[updatedAt] = now
             } get UsersTable.id
         } catch (e: Exception) {
+            println("Error al insertar usuario: ${e::class.simpleName} - ${e.message}")
             e.printStackTrace()
-            throw IllegalStateException("Falló el insert: ${e.message}")
+
+            val message = when {
+                e.message?.contains("duplicate key", ignoreCase = true) == true ->
+                    "Email already exists"
+                e.message?.contains("foreign key", ignoreCase = true) == true ->
+                    "Invalid roleId"
+                e.message?.contains("not-null constraint", ignoreCase = true) == true ->
+                    "Missing required field"
+                else -> "Database error: ${e.message}"
+            }
+            throw IllegalStateException(message)
         }
 
-        println("ID insertado: ${insertedId.value}")
+        println("Usuario insertado con ID: ${insertedId.value}")
+        return@dbQuery try {
+            Thread.sleep(50)
 
-        // Verificación directa en tabla
-        val userRow = UsersTable.select { UsersTable.id eq insertedId.value }.singleOrNull()
-        if (userRow == null) {
-            println("El usuario con id=${insertedId.value} no existe en la tabla después del insert")
-            throw IllegalStateException("El usuario con id=${insertedId.value} no fue insertado correctamente")
+            val user = (UsersTable innerJoin RolesTable)
+                .select { UsersTable.id eq insertedId.value }
+                .map { it.toUser() }
+                .singleOrNull()
+
+            if (user == null) {
+                println("⚠️ JOIN falló, intentando recuperar directamente...")
+
+                val userRow = UsersTable.select { UsersTable.id eq insertedId.value }
+                    .singleOrNull()
+
+                if (userRow != null) {
+                    val roleRow = RolesTable.select { RolesTable.id eq userRow[UsersTable.roleId] }
+                        .singleOrNull()
+
+                    if (roleRow != null) {
+                        User(
+                            id = userRow[UsersTable.id].value,
+                            roleId = userRow[UsersTable.roleId].value,
+                            roleName = RoleName.valueOf(roleRow[RolesTable.name].uppercase()),
+                            stripeId = userRow[UsersTable.stripeId],
+                            firstName = userRow[UsersTable.firstName],
+                            lastName = userRow[UsersTable.lastName],
+                            email = userRow[UsersTable.email],
+                            phone = userRow[UsersTable.phone],
+                            createdAt = userRow[UsersTable.createdAt],
+                            lastLogin = userRow[UsersTable.lastLogin]
+                        )
+                    } else {
+                        throw IllegalStateException("Role not found for roleId=${userRow[UsersTable.roleId].value}")
+                    }
+                } else {
+                    throw IllegalStateException("User not found after insert with id=${insertedId.value}")
+                }
+            } else {
+                user
+            }
+        } catch (e: Exception) {
+            println("Error al recuperar usuario: ${e::class.simpleName} - ${e.message}")
+            e.printStackTrace()
+            throw IllegalStateException("Failed to retrieve created user with id=${insertedId.value}: ${e.message}")
         }
-
-        println("Usuario insertado en tabla: $userRow")
-
-        // Recuperación completa con join
-        return@dbQuery findById(insertedId.value)
-            ?: throw IllegalStateException("No se pudo recuperar el usuario insertado con id=${insertedId.value}")
     }
 
     override suspend fun update(id: Int, command: UpdateUserCommand): User? = DatabaseFactory.dbQuery {
         val updated = UsersTable.update({ UsersTable.id eq id }) {
             command.firstName?.let { firstName -> it[UsersTable.firstName] = firstName }
             command.lastName?.let { lastName -> it[UsersTable.lastName] = lastName }
-            command.phone?.let { phone -> it[UsersTable.phone] = phone }
+            command.phone?.let { phone -> it[UsersTable.phone] = phone.take(10) }
             it[updatedAt] = LocalDateTime.now()
         }
 
@@ -127,7 +171,6 @@ class UserRepositoryImpl : UserRepository {
     }
 }
 
-// Extension functions para mapear ResultRow a modelos
 private fun ResultRow.toUser() = User(
     id = this[UsersTable.id].value,
     roleId = this[UsersTable.roleId].value,

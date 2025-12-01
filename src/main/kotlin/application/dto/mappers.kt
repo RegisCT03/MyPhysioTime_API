@@ -3,7 +3,7 @@ package com.myPhysioTime.application.dto
 import com.myPhysioTime.domain.models.*
 import java.time.LocalDateTime
 
-// BookingDetail → BookingDTO
+
 fun BookingDetail.toDTO() = BookingDTO(
     id = this.id,
     service = this.service.toDTO(),
@@ -15,7 +15,6 @@ fun BookingDetail.toDTO() = BookingDTO(
     createdAt = this.createdAt.toString()
 )
 
-// Booking → BookingDTO (por si usas Booking en create/update)
 fun Booking.toDTO() = BookingDTO(
     id = this.id,
     service = ServiceInfoDTO(id = this.serviceId, name = "", price = 0.0, duration = 0), // placeholder
@@ -27,13 +26,11 @@ fun Booking.toDTO() = BookingDTO(
     createdAt = this.createdAt.toString()
 )
 
-// TimeSlot → TimeSlotDTO
 fun TimeSlot.toDTO() = TimeSlotDTO(
     time = this.time,
     isAvailable = this.isAvailable
 )
 
-// ServiceInfo → ServiceInfoDTO
 fun ServiceInfo.toDTO() = ServiceInfoDTO(
     id = this.id,
     name = this.name,
@@ -41,7 +38,6 @@ fun ServiceInfo.toDTO() = ServiceInfoDTO(
     duration = this.duration
 )
 
-// ClientInfo → ClientInfoDTO
 fun ClientInfo.toDTO() = ClientInfoDTO(
     id = this.id,
     name = this.name,
@@ -49,13 +45,11 @@ fun ClientInfo.toDTO() = ClientInfoDTO(
     phone = this.phone
 )
 
-// PhysiotherapeutInfo → PhysiotherapeutInfoDTO
 fun PhysiotherapeutInfo.toDTO() = PhysiotherapeutInfoDTO(
     id = this.id,
     name = this.name
 )
 
-// CreateBookingRequest → CreateBookingCommand
 fun CreateBookingRequest.toCommand(clientId: Int) = CreateBookingCommand(
     serviceId = this.serviceId,
     clientId = clientId,
@@ -63,7 +57,6 @@ fun CreateBookingRequest.toCommand(clientId: Int) = CreateBookingCommand(
     notes = this.notes
 )
 
-// UpdateBookingRequest → UpdateBookingCommand
 fun UpdateBookingRequest.toCommand() = UpdateBookingCommand(
     state = this.state?.let { BookingState.valueOf(it.uppercase()) },
     notes = this.notes,

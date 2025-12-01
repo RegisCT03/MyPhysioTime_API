@@ -11,7 +11,6 @@ fun <T> Transaction.exec(
     setParams: (PreparedStatement.() -> Unit)? = null,
     transform: (ResultSet) -> T
 ): T? {
-    // ✅ Obtener la conexión JDBC real
     val jdbcConnection = (TransactionManager.current().connection as JdbcConnectionImpl).connection
 
     jdbcConnection.prepareStatement(sql).use { statement ->
