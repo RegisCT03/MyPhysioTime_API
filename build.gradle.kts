@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm") version "1.9.22"
     kotlin("plugin.serialization") version "1.9.22"
-    id("io.ktor.plugin") version "2.3.7"
+    application
 }
 
 group = "com.myPhysioTime"
@@ -30,9 +30,11 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:0.45.0")
     implementation("org.jetbrains.exposed:exposed-dao:0.45.0")
     implementation("org.jetbrains.exposed:exposed-jdbc:0.45.0")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.45.0")
     implementation("org.jetbrains.exposed:exposed-java-time:0.45.0")
     implementation("org.postgresql:postgresql:42.7.1")
     implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
 
     // Bcrypt
     implementation("org.mindrot:jbcrypt:0.4")
@@ -51,6 +53,10 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.processResources {
+    from(".env")
 }
 
 kotlin {

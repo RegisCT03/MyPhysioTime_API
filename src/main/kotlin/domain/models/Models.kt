@@ -1,5 +1,6 @@
 package com.myPhysioTime.domain.models
 
+import kotlinx.serialization.Serializable
 import java.time.LocalDateTime
 
 enum class RoleName {
