@@ -1,0 +1,11 @@
+POST http://127.0.0.1:8080/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "firstName": "Regina",
+  "lastName": "Trejo",
+  "email": "Regina@gmail",
+  "phone": "1234567890",
+  "password": "12345"
+}
