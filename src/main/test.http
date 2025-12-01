@@ -1,11 +1,8 @@
-POST http://127.0.0.1:8080/auth/register
-Content-Type: application/json
-Accept: application/json
+### Registrar nuevo usuario
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJteVBoeXNpb1RpbWUtdXNlcnMiLCJpc3MiOiJteVBoeXNpb1RpbWUiLCJ1c2VySWQiOjM5LCJlbWFpbCI6Im1lbGluYUBnbWFpbC5jb20iLCJyb2xlIjoiQ0xJRU5UIiwiZXhwIjoxNzY0NjE3NDMxfQ.9gAxWMitIYj82F4nFBnGtJm5PrtnfFxSH2Ziw2H8H84
+PUT http://127.0.0.1:8080/users/2
+Authorization: Bearer {{token}}
 
 {
-  "firstName": "Regina",
-  "lastName": "Trejo",
-  "email": "Regina@gmail",
-  "phone": "1234567890",
-  "password": "12345"
-}
+"firtsName":"Melina",
+"lastName": "Ramirez",}

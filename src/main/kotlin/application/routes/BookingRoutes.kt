@@ -1,6 +1,5 @@
 package com.myPhysioTime.application.routes
 
-
 import com.myPhysioTime.application.dto.*
 import com.myPhysioTime.domain.models.BookingState
 import com.myPhysioTime.domain.usecases.*
@@ -20,12 +19,12 @@ fun Route.bookingRoutes(
     getDashboardStatsUseCase: GetDashboardStatsUseCase,
     createBookingUseCase: CreateBookingUseCase,
     updateBookingUseCase: UpdateBookingUseCase,
-    getAvailableSlotsUseCase: GetAvailableSlotsUseCase
+    getAvailableSlotsUseCase: GetAvailableSlotsUseCase,
+    deleteBookingUseCase: DeleteBookingUseCase
 ) {
     route("/bookings") {
         authenticate("auth-jwt") {
 
-            // 📌 Listar todas las reservas (solo admin)
             get {
                 val principal = call.principal<JWTPrincipal>()
                 val role = principal?.payload?.getClaim("role")?.asString()
@@ -39,7 +38,6 @@ fun Route.bookingRoutes(
                     .onFailure { e -> call.respond(HttpStatusCode.InternalServerError, ErrorResponse(e.message ?: "Error fetching bookings")) }
             }
 
-            // 📌 Listar reservas de un cliente autenticado
             get("/my") {
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("userId")?.asInt()
@@ -50,7 +48,6 @@ fun Route.bookingRoutes(
                     .onFailure { e -> call.respond(HttpStatusCode.InternalServerError, ErrorResponse(e.message ?: "Error fetching client bookings")) }
             }
 
-            // 📌 Filtrar reservas por estado
             get("/state/{state}") {
                 val stateParam = call.parameters["state"]
                     ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorResponse("State parameter required"))
@@ -71,7 +68,6 @@ fun Route.bookingRoutes(
                     }
             }
 
-            // 📌 Estadísticas del dashboard (solo admin)
             get("/dashboard/stats") {
                 val principal = call.principal<JWTPrincipal>()
                 val role = principal?.payload?.getClaim("role")?.asString()
@@ -85,7 +81,6 @@ fun Route.bookingRoutes(
                     .onFailure { e -> call.respond(HttpStatusCode.InternalServerError, ErrorResponse(e.message ?: "Error fetching dashboard stats")) }
             }
 
-            // 📌 Crear reserva
             post {
                 val principal = call.principal<JWTPrincipal>()
                 val clientId = principal?.payload?.getClaim("userId")?.asInt()
@@ -99,7 +94,6 @@ fun Route.bookingRoutes(
                     .onFailure { e -> call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Error creating booking")) }
             }
 
-            // 📌 Actualizar reserva
             put("/{id}") {
                 val id = call.parameters["id"]?.toIntOrNull()
                     ?: return@put call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid booking id"))
@@ -112,7 +106,22 @@ fun Route.bookingRoutes(
                     .onFailure { e -> call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message ?: "Booking not found")) }
             }
 
-            // 📌 Consultar slots disponibles
+            delete("/{id}") {
+                val principal = call.principal<JWTPrincipal>()
+                val role = principal?.payload?.getClaim("role")?.asString()
+
+                if (role != "ADMIN") {
+                    return@delete call.respond(HttpStatusCode.Forbidden, ErrorResponse("Access denied"))
+                }
+
+                val id = call.parameters["id"]?.toIntOrNull()
+                    ?: return@delete call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid booking id"))
+
+                deleteBookingUseCase.execute(id)
+                    .onSuccess { call.respond(HttpStatusCode.NoContent) }
+                    .onFailure { e -> call.respond(HttpStatusCode.NotFound, ErrorResponse(e.message ?: "Booking not found")) }
+            }
+
             get("/slots") {
                 val dateParam = call.request.queryParameters["date"]
                     ?: return@get call.respond(HttpStatusCode.BadRequest, ErrorResponse("Date parameter required"))

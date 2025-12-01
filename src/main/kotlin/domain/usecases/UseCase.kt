@@ -40,7 +40,7 @@ class RegisterUseCase(
             val user = userRepository.create(commandWithHashedPassword)
             Result.success(user)
         } catch (e: Exception) {
-            e.printStackTrace() // imprime todo el stacktrace
+            e.printStackTrace()
             val message = when {
                 e.message?.contains("duplicate key value", ignoreCase = true) == true ->
                     "Email already exists"

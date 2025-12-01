@@ -10,18 +10,12 @@ import com.myPhysioTime.domain.usecases.GetBookingsByStateUseCase
 import io.ktor.server.application.*
 import io.ktor.server.netty.*
 import io.github.cdimascio.dotenv.dotenv
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 
 fun main(args: Array<String>) {
     EngineMain.main(args)
 }
 
 fun Application.module() {
-    install(ContentNegotiation) {
-        json() // usa kotlinx.serialization
-    }
-
     val dotenv = dotenv {
         directory = "./"
         ignoreIfMissing = false
@@ -36,10 +30,10 @@ fun Application.module() {
     val jwtSecret = getEnv("JWT_SECRET")
     val allowedHosts = getEnv("ALLOWED_HOSTS").split(",")
 
-    // Inicializar base de datos
+    //base de datos
     DatabaseFactory.init(dbUrl, dbUser, dbPassword)
 
-    // Instancias de infraestructura
+    //infraestructura
     val bookingRepository: BookingRepository = BookingRepositoryImpl()
     val userRepository: UserRepository = UserRepositoryImpl()
     val serviceRepository: ServiceRepository = ServiceRepositoryImpl()
@@ -51,14 +45,16 @@ fun Application.module() {
         secret = jwtSecret,
         issuer = "myPhysioTime",
         audience = "myPhysioTime-users",
-        expirationTime = 3600
+        expirationTime = 3600000
     )
 
-    // Configurar seguridad y CORS
+    configureSerialization()
+
+    //seguridad y CORS
     configureSecurity(tokenGenerator)
     configureCORS(allowedHosts)
 
-    // Instancias de casos de uso
+    //casos de uso
     val getAllClientsUseCase = GetAllClientsUseCase(userRepository)
     val getUserByIdUseCase = GetUserByIdUseCase(userRepository)
 
@@ -82,7 +78,7 @@ fun Application.module() {
     val loginUseCase = LoginUseCase(userRepository, passwordHasher, tokenGenerator)
     val registerUseCase = RegisterUseCase(userRepository, passwordHasher)
 
-    // Configurar rutas
+    //rutas
     configureRouting(
         getAllClientsUseCase,
         getUserByIdUseCase,

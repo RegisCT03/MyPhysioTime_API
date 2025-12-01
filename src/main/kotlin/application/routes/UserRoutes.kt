@@ -17,7 +17,6 @@ fun Route.userRoutes(
 ) {
     route("/clients") {
         authenticate("auth-jwt") {
-            // Listar todos los clientes (solo admin)
             get {
                 val principal = call.principal<JWTPrincipal>()
                 val role = principal?.payload?.getClaim("role")?.asString()
@@ -52,7 +51,6 @@ fun Route.userRoutes(
                     }
             }
 
-            // Ver cliente específico (solo admin)
             get("/{id}") {
                 val principal = call.principal<JWTPrincipal>()
                 val role = principal?.payload?.getClaim("role")?.asString()

@@ -36,6 +36,7 @@ fun Application.configureRouting(
             createBookingUseCase,
             updateBookingUseCase,
             getAvailableSlotsUseCase,
+            deleteBookingUseCase
         )
         serviceRoutes(getAllServicesUseCase, createServiceUseCase, updateServiceUseCase, deleteServiceUseCase)
         paymentRoutes(createPaymentUseCase, getPaymentsByClientUseCase)
